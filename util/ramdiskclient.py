@@ -17,7 +17,7 @@ class DeviceInfo(dict):
     @staticmethod
     def create(dict):
         try:
-            assert dict.has_key("dataVolumeUUID")
+            assert "dataVolumeUUID" in dict
             filename = "%s.plist" % dict.get("dataVolumeUUID")
             return DeviceInfo(plistlib.readPlist(filename))
         except:
@@ -56,14 +56,14 @@ class RamdiskToolClient(object):
         mux = usbmux.USBMux()
         mux.process(1.0)
         if not mux.devices:
-            print "Waiting for iOS device"
+            print("Waiting for iOS device")
             while not mux.devices:
                 mux.process(1.0)
         if not mux.devices:
-            print "No device found"
+            print("No device found")
             return
         dev = mux.devices[0]
-        print "Connecting to device : " + dev.serial
+        print("Connecting to device : " + dev.serial)
         try:
             self.s = mux.connect(dev, self.port)
         except:
@@ -79,7 +79,7 @@ class RamdiskToolClient(object):
     def downloadFile(self, path):
         res = self.send_req({"Request": "DownloadFile",
                               "Path": path})
-        if type(res) == plistlib._InternalDict and res.has_key("Data"):
+        if type(res) == plistlib._InternalDict and "Data" in res:
             return res["Data"].data
 
     def getSystemKeyBag(self):
@@ -136,7 +136,7 @@ class RamdiskToolClient(object):
             else:
                 if start:
                     pbar.finish()
-                    print dict.get("Request"), ":", datetime.utcnow() - start
+                    print(dict.get("Request"), ":", datetime.utcnow() - start)
                 return r
 
     def aesUID(self, data):
@@ -159,14 +159,14 @@ class RamdiskToolClient(object):
                 "key89A": "\xDB\x1F\x5B\x33\x60\x6C\x5F\x1C\x19\x34\xAA\x66\x58\x9C\x06\x61",
                 "key89B": "\x18\x3E\x99\x67\x6B\xB0\x3C\x54\x6F\xA4\x68\xF5\x1C\x0C\xBD\x49"
         }
-        for k,b in blobs.items():
+        for k,b in list(blobs.items()):
             r = self.aesUID(b)
-            if not r or r.returnCode != 0 or not r.has_key("data"):
-                print "AES UID error"
+            if not r or r.returnCode != 0 or "data" not in r:
+                print("AES UID error")
                 return
             blobs[k] = r.data.data.encode("hex")
         return blobs
 
     def reboot(self):
-        print "Rebooting device"
+        print("Rebooting device")
         return self.send_req({"Request":"Reboot"})

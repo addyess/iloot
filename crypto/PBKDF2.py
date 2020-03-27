@@ -85,7 +85,7 @@ except ImportError:
     import sha as SHA1
 
 def strxor(a, b):
-    return "".join([chr(ord(x) ^ ord(y)) for (x, y) in zip(a, b)])
+    return bytes([(x ^ y) for (x, y) in zip(a, b)])
 
 def b64encode(data, chars="+/"):
     tt = string.maketrans("+/", chars)
@@ -122,7 +122,7 @@ class PBKDF2(object):
         return self.__macmodule.new(key=key, msg=msg,
             digestmod=self.__digestmodule).digest()
 
-    def read(self, bytes):
+    def read(self, _bytes):
         """Read the specified number of key bytes."""
         if self.closed:
             raise ValueError("file-like object is closed")
@@ -130,26 +130,26 @@ class PBKDF2(object):
         size = len(self.__buf)
         blocks = [self.__buf]
         i = self.__blockNum
-        while size < bytes:
+        while size < _bytes:
             i += 1
-            if i > 0xffffffffL or i < 1:
+            if i > 0xffffffff or i < 1:
                 # We could return "" here, but
                 raise OverflowError("derived key too long")
             block = self.__f(i)
             blocks.append(block)
             size += len(block)
-        buf = "".join(blocks)
-        retval = buf[:bytes]
-        self.__buf = buf[bytes:]
+        buf = b"".join(blocks)
+        retval = buf[:_bytes]
+        self.__buf = buf[_bytes:]
         self.__blockNum = i
         return retval
 
     def __f(self, i):
         # i must fit within 32 bits
-        assert 1 <= i <= 0xffffffffL
+        assert 1 <= i <= 0xffffffff
         U = self.__prf(self.__passphrase, self.__salt + pack("!L", i))
         result = U
-        for j in xrange(2, 1+self.__iterations):
+        for j in range(2, 1+self.__iterations):
             U = self.__prf(self.__passphrase, U)
             result = strxor(result, U)
         return result
@@ -166,17 +166,17 @@ class PBKDF2(object):
 
         # passphrase and salt must be str or unicode (in the latter
         # case, we convert to UTF-8)
-        if isinstance(passphrase, unicode):
-            passphrase = passphrase.encode("UTF-8")
-        if not isinstance(passphrase, str):
-            raise TypeError("passphrase must be str or unicode")
-        if isinstance(salt, unicode):
-            salt = salt.encode("UTF-8")
-        if not isinstance(salt, str):
-            raise TypeError("salt must be str or unicode")
+        if isinstance(passphrase, str):
+            passphrase = passphrase.encode("utf-8")
+        if not isinstance(passphrase, bytes):
+            raise TypeError("passphrase must be bytes")
+        if isinstance(salt, str):
+            salt = salt.encode("utf-8")
+        if not isinstance(salt, bytes):
+            raise TypeError("salt must be bytes")
 
         # iterations must be an integer >= 1
-        if not isinstance(iterations, (int, long)):
+        if not isinstance(iterations, int):
             raise TypeError("iterations must be an integer")
         if iterations < 1:
             raise ValueError("iterations must be at least 1")
@@ -190,7 +190,7 @@ class PBKDF2(object):
         self.__iterations = iterations
         self.__prf = prf
         self.__blockNum = 0
-        self.__buf = ""
+        self.__buf = b""
         self.closed = False
 
     def close(self):
@@ -218,13 +218,13 @@ def crypt(word, salt=None, iterations=None):
         salt = _makesalt()
 
     # salt must be a string or the us-ascii subset of unicode
-    if isinstance(salt, unicode):
+    if isinstance(salt, str):
         salt = salt.encode("us-ascii")
     if not isinstance(salt, str):
         raise TypeError("salt must be a string")
 
     # word must be a string or unicode (in the latter case, we convert to UTF-8)
-    if isinstance(word, unicode):
+    if isinstance(word, str):
         word = word.encode("UTF-8")
     if not isinstance(word, str):
         raise TypeError("word must be a string or unicode")
@@ -342,7 +342,7 @@ def test_pbkdf2():
         raise RuntimeError("self-test failed")
 
     # crypt 4 (unicode)
-    result = crypt(u'\u0399\u03c9\u03b1\u03bd\u03bd\u03b7\u03c2',
+    result = crypt('\u0399\u03c9\u03b1\u03bd\u03bd\u03b7\u03c2',
         '$p5k2$$KosHgqNo$9mjN8gqjt02hDoP0c2J0ABtLIwtot8cQ')
     expected = '$p5k2$$KosHgqNo$9mjN8gqjt02hDoP0c2J0ABtLIwtot8cQ'
     if result != expected:

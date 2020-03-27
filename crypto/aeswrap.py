@@ -13,17 +13,17 @@ def pack64bit(s):
 
 def AESUnwrap(kek, wrapped):
     C = []
-    for i in xrange(len(wrapped)/8):
+    for i in range(len(wrapped)//8):
         C.append(unpack64bit(wrapped[i*8:i*8+8]))
     n = len(C) - 1
     R = [0] * (n+1)
     A = C[0]
     
-    for i in xrange(1,n+1):
+    for i in range(1,n+1):
         R[i] = C[i]
     
-    for j in reversed(xrange(0,6)):
-        for i in reversed(xrange(1,n+1)):
+    for j in reversed(range(0,6)):
+        for i in reversed(range(1,n+1)):
             todec = pack64bit(A ^ (n*j+i))
             todec += pack64bit(R[i])
             B = AES.new(kek).decrypt(todec)
@@ -34,18 +34,18 @@ def AESUnwrap(kek, wrapped):
     if A != 0xa6a6a6a6a6a6a6a6:
         #print "AESUnwrap: integrity check FAIL, wrong kek ?"
         return None    
-    res = "".join(map(pack64bit, R[1:]))
+    res = b"".join(map(pack64bit, R[1:]))
     return res
 
 def AESwrap(kek, data):
     A = 0xa6a6a6a6a6a6a6a6
     R = [0]
-    for i in xrange(len(data)/8):
+    for i in range(len(data)/8):
         R.append(unpack64bit(data[i*8:i*8+8]))
     n = len(R) - 1
     
-    for j in xrange(0,6):
-        for i in xrange(1,n+1):
+    for j in range(0,6):
+        for i in range(1,n+1):
             B = AES.new(kek).encrypt(pack64bit(A) + pack64bit(R[i]))
             A = unpack64bit(B[:8]) ^ (n*j+i)
             R[i] = unpack64bit(B[8:])
@@ -67,4 +67,4 @@ if __name__ == "__main__":
         ciphertext = AESwrap(kek.decode("hex"), data.decode("hex"))
         assert ciphertext == expected.decode("hex")
         assert AESUnwrap(kek.decode("hex"), ciphertext) == data.decode("hex")
-    print "All tests OK !"
+    print("All tests OK !")

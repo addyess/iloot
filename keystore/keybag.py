@@ -65,17 +65,17 @@ class Keybag(object):
     def createWithPlist(pldict):
         k835 = pldict.key835.decode("hex")
         data = ""
-        if pldict.has_key("KeyBagKeys"):
+        if "KeyBagKeys" in pldict:
             data = pldict["KeyBagKeys"].data
         else:
             data = ""
         keybag = Keybag.createWithDataSignBlob(data, k835)
 
-        if pldict.has_key("passcodeKey"):
+        if "passcodeKey" in pldict:
             if keybag.unlockWithPasscodeKey(pldict["passcodeKey"].decode("hex")):
-                print "Keybag unlocked with passcode key"
+                print("Keybag unlocked with passcode key")
             else:
-                print "FAILed to unlock keybag with passcode key"
+                print("FAILed to unlock keybag with passcode key")
         #HAX: inject DKey
         keybag.setDKey(pldict)
         return keybag
@@ -92,15 +92,15 @@ class Keybag(object):
         try:
             decryptedPlist  = AESdecryptCBC(mkb["_MKBPAYLOAD"].data, bag1key, mkb["_MKBIV"].data, padding=True)
         except:
-            print "FAIL: AESdecryptCBC _MKBPAYLOAD => wrong BAG1 key ?"
+            print("FAIL: AESdecryptCBC _MKBPAYLOAD => wrong BAG1 key ?")
             return None
         if not decryptedPlist.startswith("bplist"):
-            print "FAIL: decrypted _MKBPAYLOAD is not bplist"
+            print("FAIL: decrypted _MKBPAYLOAD is not bplist")
             return None
         decryptedPlist = BPlistReader.plistWithString(decryptedPlist)
         blob = decryptedPlist["KeyBagKeys"].data
         kb = Keybag.createWithDataSignBlob(blob, deviceKey)
-        if decryptedPlist.has_key("OpaqueStuff"):
+        if "OpaqueStuff" in decryptedPlist:
             OpaqueStuff = BPlistReader.plistWithString(decryptedPlist["OpaqueStuff"].data)
             kb.passcodeComplexity = OpaqueStuff.get("keyboardType")
         return kb
@@ -123,7 +123,7 @@ class Keybag(object):
             if kb.attrs["VERS"] >= 4:
                 sigcheck = hmac.new(key=hmackey, msg=keybag["DATA"], digestmod=sha1).digest()
             if sigcheck != keybag.get("SIGN", ""):
-                print "Keybag: SIGN check FAIL"
+                print("Keybag: SIGN check FAIL")
         return kb
 
     @staticmethod
@@ -131,7 +131,7 @@ class Keybag(object):
         kb = Keybag(manifest["BackupKeyBag"].data)
         kb.deviceKey = deviceKey
         if not kb.unlockBackupKeybagWithPasscode(password):
-            print "Cannot decrypt backup keybag. Wrong password ?"
+            print("Cannot decrypt backup keybag. Wrong password ?")
             return
         return kb
 
@@ -142,12 +142,13 @@ class Keybag(object):
         currentClassKey = None
 
         for tag, data in loopTLVBlocks(data):
+            tag = tag.decode('utf-8')
             if len(data) == 4:
                 data = struct.unpack(">L", data)[0]
             if tag == "TYPE":
                 self.type = data & 0x3FFFFFFF #ignore the flags
                 if self.type > 3:
-                    print "FAIL: keybag type > 3 : %d" % self.type
+                    print(("FAIL: keybag type > 3 : %d" % self.type))
             elif tag == "UUID" and self.uuid is None:
                 self.uuid = data
             elif tag == "WRAP" and self.wrap is None:
@@ -172,12 +173,12 @@ class Keybag(object):
 
     def unlockBackupKeybagWithPasscode(self, passcode):
         if self.type != BACKUP_KEYBAG and self.type != OTA_KEYBAG:
-            print "unlockBackupKeybagWithPasscode: not a backup keybag"
+            print("unlockBackupKeybagWithPasscode: not a backup keybag")
             return False
         return self.unlockWithPasscodeKey(self.getPasscodekeyFromPasscode(passcode))
 
     def unlockAlwaysAccessible(self):
-        for classkey in self.classKeys.values():
+        for classkey in list(self.classKeys.values()):
             k = classkey["WPKY"]
             if classkey["WRAP"] ==  WRAP_DEVICE:
                 if not self.deviceKey:
@@ -189,11 +190,11 @@ class Keybag(object):
     def unlockWithPasscodeKey(self, passcodekey):
         if self.type != BACKUP_KEYBAG and self.type != OTA_KEYBAG:
             if not self.deviceKey:
-                print "ERROR, need device key to unlock keybag"
+                print("ERROR, need device key to unlock keybag")
                 return False
 
-        for classkey in self.classKeys.values():
-            if not classkey.has_key("WPKY"):
+        for classkey in list(self.classKeys.values()):
+            if "WPKY" not in classkey:
                 continue
             k = classkey["WPKY"]
             if classkey["WRAP"] & WRAP_PASSCODE:
@@ -219,8 +220,8 @@ class Keybag(object):
         return AESUnwrap(md, persistent_key[32:])
 
     def unwrapKeyForClass(self, clas, persistent_key, printError=True):
-        if not self.classKeys.has_key(clas) or not self.classKeys[clas].has_key("KEY"):
-            if printError: print "Keybag key %d missing or locked" % clas
+        if clas not in self.classKeys or "KEY" not in self.classKeys[clas]:
+            if printError: print(("Keybag key %d missing or locked" % clas))
             return ""
         ck = self.classKeys[clas]["KEY"]
         #if self.attrs.get("VERS", 2) >= 3 and clas == 2:
@@ -231,35 +232,35 @@ class Keybag(object):
         return
 
     def wrapKeyForClass(self, clas, persistent_key):
-        if not self.classKeys.has_key(clas) or not self.classKeys[clas].has_key("KEY"):
-            print "Keybag key %d missing or locked" % clas
+        if clas not in self.classKeys or "KEY" not in self.classKeys[clas]:
+            print(("Keybag key %d missing or locked" % clas))
             return ""
         ck = self.classKeys[clas]["KEY"]
         return AESwrap(ck, persistent_key)
 
     def printClassKeys(self):
-        print "Keybag type : %s keybag (%d)" % (KEYBAG_TYPES[self.type], self.type)
-        print "Keybag version : %d" % self.attrs["VERS"]
-        print "Keybag UUID : %s" % self.uuid.encode("hex")
-        print "-"*128
-        print "".join(["Class".ljust(53),
+        print(("Keybag type : %s keybag (%d)" % (KEYBAG_TYPES[self.type], self.type)))
+        print(("Keybag version : %d" % self.attrs["VERS"]))
+        print(("Keybag UUID : %s" % self.uuid.encode("hex")))
+        print(("-"*128))
+        print(("".join(["Class".ljust(53),
                       "WRAP".ljust(5),
                       "Type".ljust(11),
                       "Key".ljust(65),
-                      "Public key"])
-        print "-"*128
-        for k, ck in self.classKeys.items():
-            if k == 6: print ""
-            print "".join([PROTECTION_CLASSES.get(k, "%d" % k).ljust(53),
+                      "Public key"])))
+        print(("-"*128))
+        for k, ck in list(self.classKeys.items()):
+            if k == 6: print("")
+            print(("".join([PROTECTION_CLASSES.get(k, "%d" % k).ljust(53),
                                           str(ck.get("WRAP","")).ljust(5),
                                           KEY_TYPES[ck.get("KTYP",0)].ljust(11),
                                           ck.get("KEY", "").encode("hex").ljust(65),
-                                          ck.get("PBKY", "").encode("hex")])
-        print ""
+                                          ck.get("PBKY", "").encode("hex")])))
+        print("")
 
     def getClearClassKeysDict(self):
         if self.unlocked:
             d = {}
-            for ck in self.classKeys.values():
+            for ck in list(self.classKeys.values()):
                 d["%d" % (ck["CLAS"] & 0xF)] = ck.get("KEY","").encode("hex")
             return d

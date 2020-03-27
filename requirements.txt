@@ -2,3 +2,4 @@ gevent
 hurry.filesize
 pycrypto
 protobuf
+requests

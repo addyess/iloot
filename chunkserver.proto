@@ -5,6 +5,8 @@
 // reversed by Lokkju <lokkju@lokkju.com>
 //
 
+syntax = "proto2";
+
 package chunkserver;
 
 message ChunkInfo {

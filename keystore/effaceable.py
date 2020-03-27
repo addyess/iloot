@@ -27,7 +27,7 @@ Lockers = RepeatUntil(lambda obj, ctx: obj.tag.int == DONE, Locker)
 
 def xor_strings(s, key):
         res = ""
-        for i in xrange(len(s)):
+        for i in range(len(s)):
                 res += chr(ord(s[i]) ^ ord(key[i%len(key)]))
         return res
 
@@ -36,10 +36,10 @@ def check_effaceable_header(plog):
     if z[:4] != "ecaF":
         return False
     plog_generation = struct.unpack("<L", plog[0x38:0x3C])[0]
-    print "Effaceable generation" , plog_generation
+    print(("Effaceable generation" , plog_generation))
     plog_crc = crc32(plog[0x40:0x40 + 960], crc32(plog[0x20:0x3C], crc32(z))) & 0xffffffff
     assert plog_crc == struct.unpack("<L", plog[0x3C:0x40])[0] , "Effaceable CRC"
-    print "Effaceable CRC OK"
+    print("Effaceable CRC OK")
     return True
 
 class EffaceableLockers(object):
@@ -51,19 +51,19 @@ class EffaceableLockers(object):
             self.lockers[tag] = l.data
 
     def display(self):
-        print "Lockers : " + ", ".join(sorted(self.lockers.keys()))
+        print(("Lockers : " + ", ".join(sorted(self.lockers.keys()))))
 
     def get(self, tag):
         return self.lockers.get(tag)
 
     def get_DKey(self, k835):
-        if self.lockers.has_key("Dkey"):
+        if "Dkey" in self.lockers:
             return AESUnwrap(k835, self.lockers["Dkey"])
 
     def get_EMF(self, k89b):
-        if self.lockers.has_key("LwVM"):
+        if "LwVM" in self.lockers:
             lwvm = AESdecryptCBC(self.lockers["LwVM"], k89b)
             return lwvm[-32:]
-        elif self.lockers.has_key("EMF!"):
+        elif "EMF!" in self.lockers:
             return AESdecryptCBC(self.lockers["EMF!"][4:], k89b)
 

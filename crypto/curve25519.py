@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
     #c4d9fe462a2ebbf0745195ce7dc5e8b49947bbd5b42da74175d5f8125b44582b
     shared = curve25519(mysecret, hispublic)
-    print shared.encode("hex")
+    print(shared.encode("hex"))
 
     h = SHA256.new()
     h.update('\x00\x00\x00\x01')
@@ -71,4 +71,4 @@ if __name__ == "__main__":
     md = h.digest()
 
     #e442c81b91ea876d3cf42d3aea75f4b0c3f90f9fd045e1f5784b91260f3bdc9c
-    print AESUnwrap(md, z[32+36:]).encode("hex")
+    print(AESUnwrap(md, z[32+36:]).encode("hex"))

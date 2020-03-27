@@ -11,7 +11,7 @@ def decode_protobuf_array(data, obj_class):
     return res
 
 def encode_protobuf_array(res):
-    z = ""
+    z = b""
     for o in res:
         d = o.SerializeToString()
         z += _EncodeVarint(len(d))
@@ -20,12 +20,11 @@ def encode_protobuf_array(res):
 
 #decoder.py
 def _VarintDecoder(mask):
-    local_ord = ord
     def DecodeVarint(buffer, pos):
         result = 0
         shift = 0
         while True:
-            b = local_ord(buffer[pos])
+            b = buffer[pos]
             result |= ((b & 0x7f) << shift)
             pos += 1
             if not (b & 0x80):
@@ -41,17 +40,15 @@ _DecodeVarint = _VarintDecoder((1 << 64) - 1)
 
 def _VarintEncoder():
     """Return an encoder for a basic varint value (does not include tag)."""
-
-    local_chr = chr
     def EncodeVarint( value):
         bits = value & 0x7f
         value >>= 7
-        z=""
+        z = []
         while value:
-            z += local_chr(0x80|bits)
+            z.append(0x80|bits)
             bits = value & 0x7f
             value >>= 7
-        return z + local_chr(bits)
+        return bytes(z + [bits])
 
     return EncodeVarint
 

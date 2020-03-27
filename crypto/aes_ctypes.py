@@ -83,7 +83,7 @@ elif sys.platform == "win32":
             self.hKey = c_void_p()
 
             if iv and len(iv) != 16:
-                print "Bad IV length %d" % len(iv)
+                print("Bad IV length %d" % len(iv))
                 return
 
             blob = AESBlob()
@@ -94,29 +94,29 @@ elif sys.platform == "win32":
             elif len(key) == 24:      blob.aiKeyAlg = CALG_AES_192
             elif len(key) == 32:      blob.aiKeyAlg = CALG_AES_256
             else:
-                print "bad key size"
+                print("bad key size")
                 return
 
             if CryptAcquireContext(byref(self.hProvider), 0, 0, PROV_RSA_AES, CRYPT_VERIFYCONTEXT) == 0:
-                print "CryptAcquireContext failed"
+                print("CryptAcquireContext failed")
                 return
 
             blob.keyLength = len(key)
-            for i in xrange(len(key)):
+            for i in range(len(key)):
                 blob.key[i] = ord(key[i])
 
             if CryptImportKey(self.hProvider, byref(blob), sizeof(blob), 0, 0, byref(self.hKey)) == 0:
-                print "CryptImportKey failed"
+                print("CryptImportKey failed")
                 CryptReleaseContext(self.hProvider, 0)
                 return
 
             if iv:
                 if CryptSetKeyParam(self.hKey, KP_IV, create_string_buffer(iv), 0 ) == 0:
-                    print "CryptSetKeyParam KP_MODE failed"
+                    print("CryptSetKeyParam KP_MODE failed")
 
                 dwMode = c_uint(CRYPT_MODE_CBC)
                 if CryptSetKeyParam(self.hKey, KP_MODE, byref(dwMode), 0 ) == 0:
-                    print "CryptSetKeyParam KP_MODE failed"
+                    print("CryptSetKeyParam KP_MODE failed")
 
         def __del__(self):
             CryptDestroyKey(self.hKey)
@@ -130,7 +130,7 @@ elif sys.platform == "win32":
             buf = create_string_buffer(data + pad)
             l = c_uint(len(data))
             if CryptEncrypt(self.hKey, 0, False, 0, buf, byref(l), len(buf)) == 0:
-                print "CryptEncrypt failed"
+                print("CryptEncrypt failed")
                 return
             return buf.raw[:len(data)]
 
@@ -138,7 +138,7 @@ elif sys.platform == "win32":
             buf = create_string_buffer(data)
             l = c_uint(len(data))
             if CryptDecrypt(self.hKey, 0, False, 0, buf, byref(l)) == 0:
-                print "CryptDecrypt failed"
+                print("CryptDecrypt failed")
                 return
             return buf.raw[:-1]
 
@@ -154,10 +154,10 @@ if __name__ == "__main__":
     ("8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b","6bc1bee22e409f96e93d7e117393172a","bd334f1d6e45f25ff712a214571fa5cc"),
     ("603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4","6bc1bee22e409f96e93d7e117393172a","f3eed1bdb5d2a03c064b5a7e3db181f8")
     ]
-    print "Platform: %s" % sys.platform
-    print "AES test vectors"
+    print("Platform: %s" % sys.platform)
+    print("AES test vectors")
 
     for k,clear,ciph in tests:
         assert AES(k.decode("hex")).encrypt(clear.decode("hex")) == ciph.decode("hex")
         assert AES(k.decode("hex")).decrypt(ciph.decode("hex")) == clear.decode("hex")
-    print "All tests OK !"
+    print("All tests OK !")

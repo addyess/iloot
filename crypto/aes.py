@@ -11,7 +11,7 @@ def removePadding(blocksize, s):
 
 def AESdecryptCBC(data, key, iv=ZEROIV, padding=False):
     if len(data) % 16:
-        print "AESdecryptCBC: data length not /16, truncating"
+        print("AESdecryptCBC: data length not /16, truncating")
         data = data[0:(len(data)/16) * 16]
     data = AES.new(key, AES.MODE_CBC, iv).decrypt(data)
     if padding:
@@ -20,7 +20,7 @@ def AESdecryptCBC(data, key, iv=ZEROIV, padding=False):
 
 def AESencryptCBC(data, key, iv=ZEROIV, padding=False):
     if len(data) % 16:
-        print "AESencryptCBC: data length not /16, truncating"
+        print("AESencryptCBC: data length not /16, truncating")
         data = data[0:(len(data)/16) * 16]
     data = AES.new(key, AES.MODE_CBC, iv).encrypt(data)
     return data
@@ -31,9 +31,9 @@ def AESdecryptCFB(data, key, iv=ZEROIV):
     a = AES.new(key)
     ks = a.encrypt(iv)
 
-    for i in xrange(0,len(data), 16):
+    for i in range(0,len(data), 16):
         block = data[i:i+16]
-        for j in xrange(0, len(block)):
+        for j in range(0, len(block)):
             res += chr(ord(block[j]) ^ ord(ks[j]))
         if len(block) == 16:
             ks = a.encrypt(block)
